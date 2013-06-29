@@ -1,0 +1,12 @@
+*** MODEL STATES ***
+V = -1.0
+R = 1.0
+
+*** MODEL PARAMETERS ***
+a = 0.2
+b = 0.2
+c = 3.0
+
+*** MODEL ODES ***
+d/dt(V) = c*(R+V-V^3/3)
+d/dt(R) = -(V-a+R*b)/c
