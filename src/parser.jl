@@ -1,29 +1,10 @@
-function parse_model(file::String)
-  odeModel = OdeModel(file)
-
-  s = open(file)
-
-  while !eof(s)
-    line = readline(s)
-    if isempty(line) || iscomment(line)
-      continue
-    elseif istitle(line)
-      title = get_title_type(line)
-    else
-      parse_line(line, title, odeModel)
-    end
-  end
-  
-  close(s)
-  
-  return odeModel
-end
-
 isempty(line::ASCIIString) = !ismatch(r"[^\s\t\n\r]+", line)
 
 iscomment(line::ASCIIString) = ismatch(r"^#", line)
 
 istitle(line::ASCIIString) = ismatch(r"^\*\*\*(.*)MODEL (STATES|PARAMETERS|ODES)", line)
+
+is_ode_name(name::ASCIIString) = ismatch(r"^d/dt\((.*)\)$", name)
 
 function get_title_type(line::ASCIIString)
   if ismatch(r"^\*\*\*(.*)MODEL STATES(.*)", line)
@@ -93,7 +74,34 @@ function parse_ode_line(line::ASCIIString, dict::Dict{ASCIIString, NSE})
 
   name, value = [strip(i) for i in tokens]
 
+  is_ode_name(name) ? (name = name[6:end-1]) : throw(KeyError("Time derivative \""*name*"\" has wrong format"))
+  
   haskey(dict, name) ? throw(KeyError("\""*name*"\" specified more than once")) : (dict[name] = parse(value))
   
   return nTokens
+end
+
+function parse_model(file::String)
+  odeModel = OdeModel(file, Dict{ASCIIString, Float64}(), Dict{ASCIIString, Float64}(), Dict{ASCIIString, NSE}())
+
+  s = open(file)
+
+  while !eof(s)
+    line = readline(s)
+    if isempty(line) || iscomment(line)
+      continue
+    elseif istitle(line)
+      title = get_title_type(line)
+    else
+      parse_line(line, title, odeModel)
+    end
+  end
+  
+  close(s)
+  
+  if sort(collect(keys(odeModel.states))) != sort(collect(keys(odeModel.odes)))
+    throw(KeyError("States and their time derivatives in the ODE model are inconsistent"))
+  end
+  
+  return odeModel
 end

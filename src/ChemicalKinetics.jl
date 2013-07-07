@@ -1,8 +1,16 @@
 module ChemicalKinetics  
-  include("odeModel.jl")
+  using Sundials
+
+  include("ode_model.jl")
+  include("ode_solver.jl")
   include("parser.jl")
+  include("symbolic.jl")
   
   export
+    NSE,
+    SE,
     OdeModel,
-    parse_model
+    CkCvode,
+    parse_model,
+    replace
 end

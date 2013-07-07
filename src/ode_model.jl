@@ -1,4 +1,5 @@
 typealias NSE Union(Number, Symbol, Expr)
+typealias SE Union(Symbol, Expr)
 
 type OdeModel
   file::String
@@ -8,5 +9,4 @@ type OdeModel
   odes::Dict{ASCIIString, NSE}
 end
 
-OdeModel(file::String) =
-  OdeModel(file, Dict{ASCIIString, Float64}(), Dict{ASCIIString, Float64}(), Dict{ASCIIString, NSE}())
+OdeModel(file::String) = parse_model(file::String)
