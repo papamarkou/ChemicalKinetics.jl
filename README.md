@@ -38,8 +38,9 @@ course of 25 minutes run
 Then simulate the ODE system and generate data from it with noise variance 
 equal to 0.1:
 
-    ode_simulation, data_simulation = ckCvode.simulate_data(0.25)
+    ode_simulation, data_simulation = ckCvode.simulate_data(0.1)
     
 The following plot shows an example of such simulation:
 
 ![plot results](https://github.com/scidom/ChemicalKinetics.jl/blob/master/test/fitzhugh_nagumo_simulation.png?raw=true "Fitzhugh Nagumo simulation")
+https://github.com/scidom/ChemicalKinetics.jl/blob/master/test/fitzhugh_nagumo_simulation.png
