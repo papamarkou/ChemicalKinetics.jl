@@ -1,4 +1,5 @@
-module ChemicalKinetics  
+module ChemicalKinetics
+  using Distributions
   using Sundials
 
   include("ode_model.jl")

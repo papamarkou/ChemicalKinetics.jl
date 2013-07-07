@@ -7,6 +7,7 @@ type CkCvode
   
   odes::Function
   simulate_odes::Function
+  simulate_data::Function
   
   CkCvode(odeModel::OdeModel, time, relTol, absTol) = begin
     instance = new()
@@ -19,6 +20,7 @@ type CkCvode
     
     instance.odes = make_ck_cvode_odes(odeModel)
     instance.simulate_odes = (() -> simulate_ck_cvode_odes(odeModel, instance))
+    instance.simulate_data = (noiseVar::Float64 -> simulate_ck_cvode_data(odeModel, instance, noiseVar))
     
     instance
   end
@@ -64,15 +66,18 @@ function ck_cvode_ode_wrapper(t, y, ydot, user_data)
 end
 
 function simulate_ck_cvode_odes(odeModel::OdeModel, ckCvode::CkCvode)
-  cvode_mem = Sundials.CVodeCreate(Sundials.CV_BDF, Sundials.CV_NEWTON);
-  flag = Sundials.CVodeInit(cvode_mem, cfunction(ck_cvode_ode_wrapper, Int32, (Sundials.realtype, Sundials.N_Vector, Sundials.N_Vector, Array{Any, 1})), ckCvode.time[1], Sundials.nvector(ckCvode.initStates));
-  flag = Sundials.CVodeSetUserData(cvode_mem, {ckCvode.odes, ckCvode.parameters});
-  flag = Sundials.CVodeSVtolerances(cvode_mem, ckCvode.relTol, ckCvode.absTol);
-  flag = Sundials.CVDense(cvode_mem, length(ckCvode.initStates));
+  nStates = length(ckCvode.initStates)
+  nTimePoints = length(ckCvode.time)
 
-  y = Array(Float64, length(ckCvode.time)-1, length(ckCvode.initStates));
+  cvode_mem = Sundials.CVodeCreate(Sundials.CV_BDF, Sundials.CV_NEWTON)
+  flag = Sundials.CVodeInit(cvode_mem, cfunction(ck_cvode_ode_wrapper, Int32, (Sundials.realtype, Sundials.N_Vector, Sundials.N_Vector, Array{Any, 1})), ckCvode.time[1], Sundials.nvector(ckCvode.initStates))
+  flag = Sundials.CVodeSetUserData(cvode_mem, {ckCvode.odes, ckCvode.parameters})
+  flag = Sundials.CVodeSVtolerances(cvode_mem, ckCvode.relTol, ckCvode.absTol)
+  flag = Sundials.CVDense(cvode_mem, nStates)
 
-  for i in 2:length(ckCvode.time)
+  y = Array(Float64, nTimePoints-1, nStates)
+
+  for i in 2:nTimePoints
     flag = Sundials.CVode(cvode_mem, (ckCvode.time)[i], ckCvode.initStates, [(ckCvode.time)[1]], Sundials.CV_NORMAL)
 
     if flag != Sundials.CV_SUCCESS
@@ -83,4 +88,13 @@ function simulate_ck_cvode_odes(odeModel::OdeModel, ckCvode::CkCvode)
   end;
     
   y
+end
+
+function simulate_ck_cvode_data(odeModel::OdeModel, ckCvode::CkCvode, noiseVar::Float64)
+  nStates = length(ckCvode.initStates)
+
+  simulated_odes = simulate_ck_cvode_odes(odeModel, ckCvode)
+  noise = rand(MultivariateNormal(zeros(nStates), noiseVar*eye(nStates)), length(ckCvode.time)-1)'
+  
+  return simulated_odes, simulated_odes+noise
 end
