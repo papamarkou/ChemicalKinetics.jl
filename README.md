@@ -1,5 +1,7 @@
 ## Overview of package's scope
 
+[![Build Status](https://travis-ci.org/scidom/ChemicalKinetics.jl.png)](https://travis-ci.org/scidom/ChemicalKinetics.jl)
+
 This package provides tools for simulation and statistical analysis of systems 
 modelled by kinetic equations. Reaction kinetics can be expressed as systems of 
 ordinary differential equations (ODEs), thus allowing Bayesian estimation of 
