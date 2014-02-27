@@ -1,12 +1,12 @@
-isempty(line::ASCIIString) = !ismatch(r"[^\s\t\n\r]+", line)
+isempty(line::String) = !ismatch(r"[^\s\t\n\r]+", line)
 
-iscomment(line::ASCIIString) = ismatch(r"^#", line)
+iscomment(line::String) = ismatch(r"^#", line)
 
-istitle(line::ASCIIString) = ismatch(r"^\*\*\*(.*)MODEL (STATES|PARAMETERS|ODES)", line)
+istitle(line::String) = ismatch(r"^\*\*\*(.*)MODEL (STATES|PARAMETERS|ODES)", line)
 
-is_ode_name(name::ASCIIString) = ismatch(r"^d/dt\((.*)\)$", name)
+is_ode_name(name::String) = ismatch(r"^d/dt\((.*)\)$", name)
 
-function get_title_type(line::ASCIIString)
+function get_title_type(line::String)
   if ismatch(r"^\*\*\*(.*)MODEL STATES(.*)", line)
     return "state"
   elseif ismatch(r"^\*\*\*(.*)MODEL PARAMETERS(.*)", line)
@@ -18,7 +18,7 @@ function get_title_type(line::ASCIIString)
   end
 end
 
-function parse_line(line::ASCIIString, linetype::ASCIIString, model::OdeModel)  
+function parse_line(line::String, linetype::String, model::OdeModel)  
   if linetype == "state"
     nTokens = parse_state_line(line, model.states)
   elseif linetype == "parameter"
@@ -32,7 +32,7 @@ function parse_line(line::ASCIIString, linetype::ASCIIString, model::OdeModel)
   return nTokens
 end
 
-function parse_state_line(line::ASCIIString, dict::Dict{ASCIIString, Float64})
+function parse_state_line(line::String, dict::Dict{String, Float64})
   tokens = split(line, '=')
   nTokens = length(tokens)
   
@@ -47,7 +47,7 @@ function parse_state_line(line::ASCIIString, dict::Dict{ASCIIString, Float64})
   return nTokens
 end
 
-function parse_parameter_line(line::ASCIIString, dict::Dict{ASCIIString, Float64})
+function parse_parameter_line(line::String, dict::Dict{String, Float64})
   tokens = split(line, '=')
   nTokens = length(tokens)
   
@@ -64,7 +64,7 @@ function parse_parameter_line(line::ASCIIString, dict::Dict{ASCIIString, Float64
   return nTokens  
 end
 
-function parse_ode_line(line::ASCIIString, dict::Dict{ASCIIString, NSE})
+function parse_ode_line(line::String, dict::Dict{String, NSE})
   tokens = split(line, '=')
   nTokens = length(tokens)
   
@@ -82,7 +82,7 @@ function parse_ode_line(line::ASCIIString, dict::Dict{ASCIIString, NSE})
 end
 
 function parse_model(file::String)
-  odeModel = OdeModel(file, Dict{ASCIIString, Float64}(), Dict{ASCIIString, Float64}(), Dict{ASCIIString, NSE}())
+  odeModel = OdeModel(file, Dict{String, Float64}(), Dict{String, Float64}(), Dict{String, NSE}())
 
   s = open(file)
 

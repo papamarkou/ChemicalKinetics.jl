@@ -4,9 +4,9 @@ typealias SE Union(Symbol, Expr)
 type OdeModel
   file::String
   
-  states::Dict{ASCIIString, Float64}
-  parameters::Dict{ASCIIString, Float64}
-  odes::Dict{ASCIIString, NSE}
+  states::Dict{String, Float64}
+  parameters::Dict{String, Float64}
+  odes::Dict{String, NSE}
 end
 
 OdeModel(file::String) = parse_model(file::String)
