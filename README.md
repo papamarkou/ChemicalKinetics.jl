@@ -1,6 +1,7 @@
 ## Overview of package's scope
 
 [![Build Status](https://travis-ci.org/scidom/ChemicalKinetics.jl.png)](https://travis-ci.org/scidom/ChemicalKinetics.jl)
+[![ChemicalKinetics](http://pkg.julialang.org/badges/ChemicalKinetics_0.3.svg)](http://pkg.julialang.org/?pkg=ChemicalKinetics&ver=0.3)
 
 This package provides tools for simulation and statistical analysis of systems 
 modelled by kinetic equations. Reaction kinetics can be expressed as systems of 
