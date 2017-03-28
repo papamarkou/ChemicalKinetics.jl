@@ -1,16 +1,16 @@
-isempty(line::String) = !ismatch(r"[^\s\t\n\r]+", line)
+isempty(line::AbstractString) = !ismatch(r"[^\s\t\n\r]+", line)
 
-iscomment(line::String) = ismatch(r"^#", line)
+iscomment(line::AbstractString) = ismatch(r"^#", line)
 
-istitle(line::String) = ismatch(r"^\*\*\*(.*)MODEL (STATES|PARAMETERS|ODES)", line)
+istitle(line::AbstractString) = ismatch(r"^\*\*\*(.*)MODEL (STATES|PARAMETERS|ODES)", line)
 
-is_ode_name(name::String) = ismatch(r"^d/dt\((.*)\)$", name)
+is_ode_name(name::AbstractString) = ismatch(r"^d/dt\((.*)\)$", name)
 
-function get_title_type(line::String)
+function get_title_type(line::AbstractString)
   if ismatch(r"^\*\*\*(.*)MODEL STATES(.*)", line)
     return "state"
   elseif ismatch(r"^\*\*\*(.*)MODEL PARAMETERS(.*)", line)
-    return "parameter"  
+    return "parameter"
   elseif ismatch(r"^\*\*\*(.*)MODEL ODES(.*)", line)
     return "ode"
   else
@@ -18,7 +18,7 @@ function get_title_type(line::String)
   end
 end
 
-function parse_line(line::String, linetype::String, model::OdeModel)  
+function parse_line(line::AbstractString, linetype::AbstractString, model::OdeModel)
   if linetype == "state"
     nTokens = parse_state_line(line, model.states)
   elseif linetype == "parameter"
@@ -28,46 +28,46 @@ function parse_line(line::String, linetype::String, model::OdeModel)
   else
     throw(ParseError("Unknown title \""*line*"\" type in model specification"))
   end
-  
+
   return nTokens
 end
 
-function parse_state_line(line::String, dict::Dict{String, Float64})
+function parse_state_line(line::AbstractString, dict::Dict{AbstractString, Float64})
   tokens = split(line, '=')
   nTokens = length(tokens)
-  
+
   if nTokens != 2
     throw(ParseError("Line \""*line*"\" has wrong format"))
   end
 
-  name, value = [strip(i) for i in tokens]  
-  
-  haskey(dict, name) ? throw(KeyError("\""*name*"\" specified more than once")) : (dict[name] = float64(value))
-  
+  name, value = [strip(i) for i in tokens]
+
+  haskey(dict, name) ? throw(KeyError("\""*name*"\" specified more than once")) : (dict[name] = Float64(parse(value)))
+
   return nTokens
 end
 
-function parse_parameter_line(line::String, dict::Dict{String, Float64})
+function parse_parameter_line(line::AbstractString, dict::Dict{AbstractString, Float64})
   tokens = split(line, '=')
   nTokens = length(tokens)
-  
+
   if nTokens == 1
     dict[strip(tokens)] = NaN
   elseif nTokens == 2
-    name, value = [strip(i) for i in tokens]  
-  
-    haskey(dict, name) ? throw(KeyError("\""*name*"\" specified more than once")) : (dict[name] = float64(value))
+    name, value = [strip(i) for i in tokens]
+
+    haskey(dict, name) ? throw(KeyError("\""*name*"\" specified more than once")) : (dict[name] = Float64(parse(value)))
   else
-    throw(ParseError("Line \""*line*"\" has wrong format"))    
+    throw(ParseError("Line \""*line*"\" has wrong format"))
   end
-  
-  return nTokens  
+
+  return nTokens
 end
 
-function parse_ode_line(line::String, dict::Dict{String, NSE})
+function parse_ode_line(line::AbstractString, dict::Dict{AbstractString, NSE})
   tokens = split(line, '=')
   nTokens = length(tokens)
-  
+
   if nTokens != 2
     throw(ParseError("Line \""*line*"\" has wrong format"))
   end
@@ -75,14 +75,14 @@ function parse_ode_line(line::String, dict::Dict{String, NSE})
   name, value = [strip(i) for i in tokens]
 
   is_ode_name(name) ? (name = name[6:end-1]) : throw(KeyError("Time derivative \""*name*"\" has wrong format"))
-  
+
   haskey(dict, name) ? throw(KeyError("\""*name*"\" specified more than once")) : (dict[name] = parse(value))
-  
+
   return nTokens
 end
 
-function parse_model(file::String)
-  odeModel = OdeModel(file, Dict{String, Float64}(), Dict{String, Float64}(), Dict{String, NSE}())
+function parse_model(file::AbstractString)
+  odeModel = OdeModel(file, Dict{AbstractString, Float64}(), Dict{AbstractString, Float64}(), Dict{AbstractString, NSE}())
 
   s = open(file)
 
@@ -96,12 +96,12 @@ function parse_model(file::String)
       parse_line(line, title, odeModel)
     end
   end
-  
+
   close(s)
-  
+
   if sort(collect(keys(odeModel.states))) != sort(collect(keys(odeModel.odes)))
     throw(KeyError("States and their time derivatives in the ODE model are inconsistent"))
   end
-  
+
   return odeModel
 end

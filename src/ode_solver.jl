@@ -4,48 +4,47 @@ type CkCvode
   time::Array{Float64, 1}
   relTol::Float64
   absTol::Array{Float64, 1}
-  
+
   odes::Function
   simulate_odes::Function
   simulate_data::Function
-  
+
   CkCvode(odeModel::OdeModel, time, relTol, absTol) = begin
     instance = new()
-    
+
     instance.initStates = collect(values(odeModel.states))
     instance.parameters = collect(values(odeModel.parameters))
     instance.time = time
     instance.relTol = relTol
     instance.absTol = absTol
-    
+
     instance.odes = make_ck_cvode_odes(odeModel)
     instance.simulate_odes = (() -> simulate_ck_cvode_odes(odeModel, instance))
     instance.simulate_data = (noiseVar::Float64 -> simulate_ck_cvode_data(odeModel, instance, noiseVar))
-    
+
     instance
   end
 end
 
-CkCvode(odeModel::OdeModel, time) =
-  CkCvode(odeModel::OdeModel, time, 1e-4, [1e-8, 1e-14, 1e-6])
+CkCvode(odeModel::OdeModel, time) = CkCvode(odeModel::OdeModel, time, 1e-4, [1e-8, 1e-14, 1e-6])
 
 function codegen_ck_cvode_odes(odeModel::OdeModel)
   state_keys = collect(keys(odeModel.states))
-  i = 0; state_dict = (SE=>SE)[symbol(j)=>Expr(:ref, :_y, i+=1) for j in state_keys]
-  i = 0; ode_dict = (SE=>SE)[symbol(j)=>Expr(:ref, :_ydot, i+=1) for j in state_keys]
-  i = 0; parameter_dict = (SE=>SE)[symbol(j)=>Expr(:ref, :_p, i+=1) for j in keys(odeModel.parameters)]
-  
-  scratch_odes = copy(odeModel.odes)  
+  i = 0; state_dict = Dict{SE,SE}(Symbol(j)=>Expr(:ref, :_y, i+=1) for j in state_keys)
+  i = 0; ode_dict = Dict{SE,SE}(Symbol(j)=>Expr(:ref, :_ydot, i+=1) for j in state_keys)
+  i = 0; parameter_dict = Dict{SE,SE}(Symbol(j)=>Expr(:ref, :_p, i+=1) for j in keys(odeModel.parameters))
+
+  scratch_odes = copy(odeModel.odes)
   for i in values(scratch_odes)
     replace(i, state_dict)
     replace(i, parameter_dict)
   end
 
-  body = {}
+  body = []
   for i in state_keys
-    push!(body, :($(ode_dict[symbol(i)]) = $(scratch_odes[i])))
+    push!(body, :($(ode_dict[Symbol(i)]) = $(scratch_odes[i])))
   end
-  
+
   @gensym ck_cvode_odes
   quote
     function $ck_cvode_odes(_t, _y, _ydot, _p)
@@ -56,13 +55,13 @@ end
 
 make_ck_cvode_odes(odeModel::OdeModel) = eval(codegen_ck_cvode_odes(odeModel))
 
-function ck_cvode_ode_wrapper(t, y, ydot, user_data) 
+function ck_cvode_ode_wrapper(t, y, ydot, user_data)
   y = Sundials.asarray(y)
   ydot = Sundials.asarray(ydot)
 
   user_data[1](t, y, ydot, user_data[2])
 
-  return int32(0)
+  return Int32(0)
 end
 
 function simulate_ck_cvode_odes(odeModel::OdeModel, ckCvode::CkCvode)
@@ -72,7 +71,7 @@ function simulate_ck_cvode_odes(odeModel::OdeModel, ckCvode::CkCvode)
   cvode_mem = Sundials.CVodeCreate(Sundials.CV_BDF, Sundials.CV_NEWTON)
   flag = Sundials.CVodeInit(cvode_mem, cfunction(ck_cvode_ode_wrapper, Int32, (Sundials.realtype, Sundials.N_Vector,
     Sundials.N_Vector, Array{Any, 1})), ckCvode.time[1], Sundials.nvector(ckCvode.initStates))
-  flag = Sundials.CVodeSetUserData(cvode_mem, {ckCvode.odes, ckCvode.parameters})
+  flag = Sundials.CVodeSetUserData(cvode_mem, [ckCvode.odes, ckCvode.parameters])
   flag = Sundials.CVodeSVtolerances(cvode_mem, ckCvode.relTol, ckCvode.absTol)
   flag = Sundials.CVDense(cvode_mem, nStates)
 
@@ -87,7 +86,7 @@ function simulate_ck_cvode_odes(odeModel::OdeModel, ckCvode::CkCvode)
 
     y[i-1, :] = ckCvode.initStates
   end;
-    
+
   y
 end
 
@@ -96,6 +95,6 @@ function simulate_ck_cvode_data(odeModel::OdeModel, ckCvode::CkCvode, noiseVar::
 
   simulated_odes = simulate_ck_cvode_odes(odeModel, ckCvode)
   noise = rand(MultivariateNormal(zeros(nStates), noiseVar*eye(nStates)), length(ckCvode.time)-1)'
-  
+
   return simulated_odes, simulated_odes+noise
 end

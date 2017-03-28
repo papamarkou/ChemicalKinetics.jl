@@ -6,7 +6,7 @@ module ChemicalKinetics
   include("ode_solver.jl")
   include("parser.jl")
   include("symbolic.jl")
-  
+
   export
     NSE,
     SE,

@@ -1,12 +1,12 @@
-typealias NSE Union(Number, Symbol, Expr)
-typealias SE Union(Symbol, Expr)
+typealias NSE Union{Number, Symbol, Expr}
+typealias SE Union{Symbol, Expr}
 
 type OdeModel
-  file::String
-  
-  states::Dict{String, Float64}
-  parameters::Dict{String, Float64}
-  odes::Dict{String, NSE}
+  file::AbstractString
+
+  states::Dict{AbstractString, Float64}
+  parameters::Dict{AbstractString, Float64}
+  odes::Dict{AbstractString, NSE}
 end
 
-OdeModel(file::String) = parse_model(file::String)
+OdeModel(file::AbstractString) = parse_model(file::AbstractString)
